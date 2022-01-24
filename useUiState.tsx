@@ -7,8 +7,6 @@ import useInitBle from './useInitBle';
 import CollectionStartStopController from './CollectionStartStopController';
 import useBleHandleValueForCharacteristic from './useBleHandleValueForCharacteristic';
 import {BrvPeripheral} from './types';
-import {bytesToString} from 'convert-string';
-import AppContext from './AppContext';
 const timeout = (ms: number): Promise<void> => {
     return new Promise(resolve => {
         console.log(`Initiating timeout of ${ms} msec.`);
@@ -34,11 +32,6 @@ const useUiState = (
         [],
     );
     const [list, setList] = useState([] as any[]);
-
-    const [countA, setCountA] = useState(0);
-    const [countC, setCountC] = useState(0);
-
-    const {addA, addB, addC, addD, isCollecting} = React.useContext(AppContext);
 
     const retrieveServices = async (id: string) => {
         let peripheralData = await BleManager.retrieveServices(id);
@@ -181,47 +174,12 @@ const useUiState = (
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleUpdateValueForCharacteristic = useCallback(
-        (data: any) => {
-            const dataAsString = bytesToString(data.value);
-            console.log(
-                `Recieved ${dataAsString} for characteristic ${data.characteristic}`,
-            );
-            if (isCollecting) {
-                const [first, second] = dataAsString.split(' ');
-                if (first.startsWith('A')) {
-                    const a = Number(Number(first.replace('A', '')).toFixed(2));
-                    console.log('a', a);
-                    const b = Number(
-                        Number(second.replace('B', '')).toFixed(2),
-                    );
-                    console.log('b', b);
-                    addA({x: `${countA}`, y: a});
-                    addB({x: `${countA}`, y: b});
-                    setCountA(countA + 1);
-                }
-                if (first.startsWith('C')) {
-                    const c = Number(Number(first.replace('C', '')).toFixed(2));
-                    console.log('c', c);
-                    const d = Number(
-                        Number(second.replace('D', '')).toFixed(2),
-                    );
-                    console.log('d', d);
-                    addC({x: `${countC}`, y: c});
-                    addD({x: `${countC}`, y: d});
-                    setCountC(countC + 1);
-                }
-            }
-        },
-        [addA, addB, addC, addD, isCollecting, countA, countC],
-    );
-
     useInitBle(
         handleDiscoverPeripheral,
         handleDisconnectedPeripheral,
         handleStopScan,
     );
-    useBleHandleValueForCharacteristic(handleUpdateValueForCharacteristic);
+    useBleHandleValueForCharacteristic();
 
     const StartStopController = (props: {
         disabled: boolean;

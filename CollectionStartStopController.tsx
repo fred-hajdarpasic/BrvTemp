@@ -2,7 +2,7 @@
 /* eslint-disable prettier/prettier */
 import React from 'react';
 
-import {Button, TouchableHighlight, View} from 'react-native';
+import {Button, Text, TouchableHighlight, View} from 'react-native';
 import AppContext from './AppContext';
 import Colors from './Colors';
 
@@ -26,13 +26,13 @@ const CollectionStartStopController = (props: CollectionStartStopControllerProps
                         }}
                     />
                 </TouchableHighlight>
-                <Button
-                        title="Fred"
-                        color={Colors.green}
-                        onPress={() => {
-                            console.log('Fred');
-                        }}
-                    />
+                <Text style={{
+                                textAlign: 'left',
+                                textAlignVertical: 'center',
+                                padding: 2,
+                                flexGrow: 1,
+                            }}
+                        />
                 <TouchableHighlight style={{flexGrow: 5}}>
                     <Button
                         disabled={!isCollecting || props.disabled}

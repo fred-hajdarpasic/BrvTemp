@@ -107,10 +107,10 @@ const App = () => {
                     />
                 </View>
                 <View style={{flexGrow: 1}}>
-                    {/* <View style={{margin: 10}}>
+                    <View style={{margin: 10}}>
                         <Chart a={a} b={b} />
                     </View>
-                    <View style={{margin: 10}}>
+                    {/* <View style={{margin: 10}}>
                         <Chart a={c} b={d} />
                     </View> */}
                 </View>
