@@ -4,11 +4,11 @@ import BleManager from 'react-native-ble-manager';
 import {Peripheral} from 'react-native-ble-manager';
 import useScanning, {ScanButtonProperties} from './useScanning';
 import useInitBle from './useInitBle';
-import useTimer from './useTimer';
-import NowCount from './NowCount';
+import CollectionStartStopController from './CollectionStartStopController';
 import useBleHandleValueForCharacteristic from './useBleHandleValueForCharacteristic';
 import {BrvPeripheral} from './types';
 import {bytesToString} from 'convert-string';
+import AppContext from './AppContext';
 const timeout = (ms: number): Promise<void> => {
     return new Promise(resolve => {
         console.log(`Initiating timeout of ${ms} msec.`);
@@ -20,13 +20,7 @@ const PERIPHERAL_NAME_TO_SEARCH = 'BRV-TEMP';
 const NOTIFY_SERVICE_ID = '18424398-7cbc-11e9-8f9e-2a86e4085a59';
 const NOTIFY_CHARACTERISTIC_ID = '772ae377-b3d2-ff8e-1042-5481d1e03456';
 const useUiState = (
-    isCollecting: boolean,
-    isPaused: boolean,
-    nowCount: number,
     onStartScanning: () => void,
-    onStartCollecting: () => void,
-    setNowCount: (count: number) => void,
-    onStopCollecting: () => void,
 ): [
     any[],
     Dispatch<SetStateAction<any[]>>,
@@ -41,13 +35,10 @@ const useUiState = (
     );
     const [list, setList] = useState([] as any[]);
 
-    const [force, setForce] = useState(false);
-    const [startScreenRefreshTimer, stopScreenRefreshTimer] = useTimer(
-        1000,
-        () => {
-            setForce(!force);
-        },
-    );
+    const [countA, setCountA] = useState(0);
+    const [countC, setCountC] = useState(0);
+
+    const {addA, addB, addC, addD, isCollecting} = React.useContext(AppContext);
 
     const retrieveServices = async (id: string) => {
         let peripheralData = await BleManager.retrieveServices(id);
@@ -86,6 +77,7 @@ const useUiState = (
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const stopNotification = async (id: string) => {
         try {
             console.log('await BleManager.stopNotification');
@@ -103,27 +95,18 @@ const useUiState = (
 
     const connect = async (peripheral: BrvPeripheral) => {
         const id = peripheral.peripheral.id;
-        console.log('Connecting to ' + id);
         await BleManager.connect(id);
-        console.log('Connected to ' + id);
         await timeout(100);
-        /* Test read current RSSI value */
-        console.log('Getting services for ' + id);
         await retrieveServices(id);
-
-        console.log('Start notification for ' + id);
         await startNotification(id);
         peripheral.connected = true;
-        console.log('Connected to ' + id);
     };
 
     const disconnect = async (peripheral: BrvPeripheral) => {
         const id = peripheral.peripheral.id;
-        console.log('Disconnecting from ' + id);
         // await stopNotification(id);
         await BleManager.disconnect(id);
         peripheral.connected = false;
-        console.log('Disconnected from ' + id);
     };
 
     const toggleConnection = async (peripheral: BrvPeripheral) => {
@@ -160,7 +143,6 @@ const useUiState = (
     const [handleStopScan, stopScan, ScanButton] = useScanning(onStartScan);
 
     const handleDiscoverPeripheral = useCallback((peripheral: Peripheral) => {
-        console.log('peripheral', peripheral.id);
         if (peripheral.name === PERIPHERAL_NAME_TO_SEARCH) {
             if (!peripherals.get(peripheral.id)) {
                 console.log(
@@ -205,9 +187,33 @@ const useUiState = (
             console.log(
                 `Recieved ${dataAsString} for characteristic ${data.characteristic}`,
             );
+            if (isCollecting) {
+                const [first, second] = dataAsString.split(' ');
+                if (first.startsWith('A')) {
+                    const a = Number(Number(first.replace('A', '')).toFixed(2));
+                    console.log('a', a);
+                    const b = Number(
+                        Number(second.replace('B', '')).toFixed(2),
+                    );
+                    console.log('b', b);
+                    addA({x: `${countA}`, y: a});
+                    addB({x: `${countA}`, y: b});
+                    setCountA(countA + 1);
+                }
+                if (first.startsWith('C')) {
+                    const c = Number(Number(first.replace('C', '')).toFixed(2));
+                    console.log('c', c);
+                    const d = Number(
+                        Number(second.replace('D', '')).toFixed(2),
+                    );
+                    console.log('d', d);
+                    addC({x: `${countC}`, y: c});
+                    addD({x: `${countC}`, y: d});
+                    setCountC(countC + 1);
+                }
+            }
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [isCollecting, isPaused, nowCount],
+        [addA, addB, addC, addD, isCollecting, countA, countC],
     );
 
     useInitBle(
@@ -217,44 +223,11 @@ const useUiState = (
     );
     useBleHandleValueForCharacteristic(handleUpdateValueForCharacteristic);
 
-    // console.log(`Main screen render getNowCount = ${getNowCount()} isCollecting=${isCollecting()}`);
-
-    React.useEffect(() => {
-        if (isCollecting && !isPaused) {
-            startScreenRefreshTimer();
-        } else {
-            stopScreenRefreshTimer();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isCollecting]);
-
-    const NowCountWidget = (props: {
+    const StartStopController = (props: {
         disabled: boolean;
         peripheralId: string;
     }): JSX.Element => {
-        return (
-            <NowCount
-                started={isCollecting}
-                disabled={props.disabled}
-                nowCount={nowCount}
-                onStartCollecting={async () => {
-                    console.log(
-                        'NowCountWidget->onStartCollecting:' +
-                            props.peripheralId,
-                    );
-                    onStartCollecting();
-                    await startNotification(props.peripheralId);
-                }}
-                onStopCollecting={async () => {
-                    console.log(
-                        'NowCountWidget->onStopCollecting:' +
-                            props.peripheralId,
-                    );
-                    onStopCollecting();
-                    await stopNotification(props.peripheralId);
-                }}
-            />
-        );
+        return <CollectionStartStopController disabled={props.disabled} />;
     };
 
     return [
@@ -263,7 +236,7 @@ const useUiState = (
         toggleConnection,
         retrieveRssi,
         ScanButton,
-        NowCountWidget,
+        StartStopController,
     ];
 };
 

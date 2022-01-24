@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
     },
     deviceList: {
         backgroundColor: Colors.lighter,
-        flexGrow: 1,
+        // flexGrow: 1,
     },
     engine: {
         position: 'absolute',
