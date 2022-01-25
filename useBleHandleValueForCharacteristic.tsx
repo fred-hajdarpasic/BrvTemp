@@ -14,7 +14,7 @@ const D: Point[] = [];
 let countA = 0;
 let countC = 0;
 
-const SLIDING_WINDOW = 4;
+const SLIDING_WINDOW = 16;
 
 const shift = <T extends unknown>(target: T[], p: T) => {
     if (target.length >= SLIDING_WINDOW) {
@@ -24,9 +24,12 @@ const shift = <T extends unknown>(target: T[], p: T) => {
 };
 
 const useBleHandleValueForCharacteristic = () => {
-    const {setA, setB, setC, setD} = React.useContext(AppContext);
+    const {setA, setB, setC, setD, isCollecting} = React.useContext(AppContext);
     const handleUpdateValueForCharacteristic = React.useCallback(
         (data: any) => {
+            if (!isCollecting) {
+                return;
+            }
             const dataAsString = bytesToString(data.value);
             console.log(
                 `Recieved ${dataAsString} for characteristic ${data.characteristic}`,
@@ -55,7 +58,7 @@ const useBleHandleValueForCharacteristic = () => {
                 setD([...D]);
             }
         },
-        [setA, setB, setC, setD],
+        [setA, setB, setC, setD, isCollecting],
     );
 
     useEffect(() => {

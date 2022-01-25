@@ -3,17 +3,18 @@
 import React from 'react';
 import {SafeAreaView, View, Text, StatusBar, FlatList} from 'react-native';
 
-import useUiState from './useUiState';
-import useConnected from './useConnected';
+import useUiState, {toggleConnection} from './useUiState';
+import ConnectionIndicator from './ConnectionIndicator';
 import {BrvPeripheral} from './types';
 import {styles} from './styles';
 import PeripheralDetails from './PeripheralDetails';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Colors from './Colors';
-import {Chart} from './Chart';
 import AppContext, {Point} from './AppContext';
+import CollectionStartStopController from './CollectionStartStopController';
+import ScanButton from './ScanButton';
+import { Chart } from './Chart';
 
 const App = () => {
+    const {peripherals, list, setList} = React.useContext(AppContext);
     const [isConnected, setIsConnected] = React.useState(false);
     const [blIsOn, setBlIsOn] = React.useState(false);
 
@@ -22,47 +23,48 @@ const App = () => {
     const [connectedPeripheralId, setConnectedPeripheralId] =
         React.useState('');
 
-    const onStartScanning = () => {
+    const onStartedScanning = React.useCallback(() => {
         console.log('App: On start scanning');
         setIsCollecting(false);
         setIsConnected(false);
         setConnectedPeripheralId('');
-    };
+    }, []);
 
-    const [
-        list,
-        setList,
-        toggleConnection,
-        retrieveRssi,
-        ScanButton,
-        StartStopController,
-    ] = useUiState(onStartScanning);
+    const onStoppedScanning = React.useCallback(() => {
+        console.log('App: On start scanning');
+        setIsCollecting(false);
+        setIsConnected(false);
+        setConnectedPeripheralId('');
+    }, []);
 
-    const onBleStateChanged = (on: boolean) => {
-        setBlIsOn(on);
-    };
+    useUiState();
 
-    const [ConnectionIndicator] = useConnected(
-        connectedPeripheralId,
-        onBleStateChanged,
+    const renderItem = React.useCallback(
+        (peripheral: BrvPeripheral) => {
+            return (
+                <PeripheralDetails
+                    onPress={async () => {
+                        await toggleConnection(peripheral);
+                        const id = peripheral.peripheral.id;
+                        let p = peripherals.get(id);
+                        if (p) {
+                            peripherals.set(id, p);
+                            setList(Array.from(peripherals.values()));
+                        }
+                        if (connectedPeripheralId) {
+                            setConnectedPeripheralId('');
+                        } else {
+                            setConnectedPeripheralId(peripheral.peripheral.id);
+                        }
+                        setIsConnected(peripheral.connected);
+                    }}
+                    item={peripheral}
+                    key={peripheral.peripheral.id}
+                />
+            );
+        },
+        [connectedPeripheralId, peripherals, setList],
     );
-    const renderItem = (peripheral: BrvPeripheral) => {
-        return (
-            <PeripheralDetails
-                onPress={async () => {
-                    await toggleConnection(peripheral);
-                    if (connectedPeripheralId) {
-                        setConnectedPeripheralId('');
-                    } else {
-                        setConnectedPeripheralId(peripheral.peripheral.id);
-                    }
-                    setIsConnected(peripheral.connected);
-                }}
-                item={peripheral}
-                key={peripheral.peripheral.id}
-            />
-        );
-    };
 
     React.useEffect(() => {
         if (!blIsOn) {
@@ -70,6 +72,10 @@ const App = () => {
         }
     }, [blIsOn]);
     const {a, b, c, d} = React.useContext(AppContext);
+
+    const onBleStateChanged = React.useCallback((on: boolean) => {
+        setBlIsOn(on);
+    }, []);
 
     return (
         <View>
@@ -83,7 +89,11 @@ const App = () => {
                             justifyContent: 'space-between',
                         }}>
                         <View style={{flexGrow: 5}}>
-                            <ConnectionIndicator connected={isConnected} />
+                            <ConnectionIndicator
+                                connected={isConnected}
+                                preipheralId={connectedPeripheralId}
+                                onBleStateChanged={onBleStateChanged}
+                            />
                         </View>
                         <Text
                             style={{
@@ -94,7 +104,11 @@ const App = () => {
                             }}
                         />
                         <View style={{flexGrow: 5}}>
-                            <ScanButton disabled={!blIsOn} />
+                            <ScanButton
+                                disabled={!blIsOn}
+                                onStartedScanning={onStartedScanning}
+                                onStopppedScannning={onStoppedScanning}
+                            />
                         </View>
                     </View>
                 </View>
@@ -110,15 +124,12 @@ const App = () => {
                     <View style={{margin: 10}}>
                         <Chart a={a} b={b} />
                     </View>
-                    {/* <View style={{margin: 10}}>
+                    <View style={{margin: 10}}>
                         <Chart a={c} b={d} />
-                    </View> */}
+                    </View>
                 </View>
                 <View style={styles.body}>
-                    <StartStopController
-                        disabled={!isConnected}
-                        peripheralId={connectedPeripheralId}
-                    />
+                    <CollectionStartStopController disabled={!isConnected} />
                 </View>
             </SafeAreaView>
         </View>
@@ -142,6 +153,11 @@ const AppCtx = () => {
     const [c, setC] = React.useState<Point[]>([]);
     const [d, setD] = React.useState<Point[]>([]);
     const [isCollecting, setIsCollecting] = React.useState(false);
+    const [list, setList] = React.useState([] as any[]);
+    const peripherals = React.useMemo(
+        () => new Map<string, BrvPeripheral>(),
+        [],
+    );
 
     const addA = React.useCallback(
         (p: Point) => {
@@ -188,6 +204,9 @@ const AppCtx = () => {
                 addD,
                 isCollecting,
                 setIsCollecting,
+                list,
+                setList,
+                peripherals,
             }}>
             <App />
         </AppContext.Provider>

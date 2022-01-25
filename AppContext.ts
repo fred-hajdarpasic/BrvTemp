@@ -1,4 +1,5 @@
 import React from 'react';
+import {BrvPeripheral} from './types';
 
 export interface Point {
     x: string;
@@ -20,6 +21,9 @@ export interface AppContextType {
     addD: (p: Point) => void;
     isCollecting: boolean;
     setIsCollecting: React.Dispatch<React.SetStateAction<boolean>>;
+    list: any[];
+    setList: React.Dispatch<React.SetStateAction<any[]>>;
+    peripherals: Map<string, BrvPeripheral>;
 }
 
 const AppContext = React.createContext<AppContextType>({
@@ -37,6 +41,9 @@ const AppContext = React.createContext<AppContextType>({
     addD: () => {},
     isCollecting: false,
     setIsCollecting: () => {},
+    list: [],
+    setList: () => {},
+    peripherals: new Map<string, BrvPeripheral>(),
 });
 
 export default AppContext;

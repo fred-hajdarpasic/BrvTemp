@@ -3,6 +3,7 @@ import {Point} from './AppContext';
 import {LineChart} from 'react-native-chart-kit';
 import {Dimensions} from 'react-native';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const Chart = (props: {a: Point[]; b: Point[]}) => {
     let sampleData = React.useMemo(() => {
         return {
