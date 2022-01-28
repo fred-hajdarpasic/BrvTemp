@@ -92,7 +92,7 @@ export const ScanButton = (props: ScanButtonProperties): JSX.Element => {
     }, [props, setIsScanInProgress]);
 
     const handleDiscoverPeripheral = useCallback((peripheral: Peripheral) => {
-        if (peripheral.name === PERIPHERAL_NAME_TO_SEARCH) {
+        if (peripheral.name?.includes(PERIPHERAL_NAME_TO_SEARCH)) {
             if (!peripherals.get(peripheral.id)) {
                 console.log(
                     `Got First ${PERIPHERAL_NAME_TO_SEARCH}, peripheral: ${JSON.stringify(
