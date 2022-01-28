@@ -1,5 +1,5 @@
 import React, {useState, useCallback} from 'react';
-import {View, TouchableHighlight, Text} from 'react-native';
+import {TouchableHighlight, Text} from 'react-native';
 
 import BleManager, {disconnect, Peripheral} from 'react-native-ble-manager';
 import AppContext from './AppContext';
@@ -18,19 +18,19 @@ export interface ScanButtonProperties {
 }
 
 export const ScanButton = (props: ScanButtonProperties): JSX.Element => {
-    const {peripherals, setList} = React.useContext(AppContext);
-    const [isScanInProgress, setIsScanInProgress] = useState(false);
+    const {peripherals, setList, isScanInProgress, setIsScanInProgress} =
+        React.useContext(AppContext);
     const [isScanTransitioning, setIsScanTransitioning] = useState(false);
     const [countValue, setCountValue] = React.useState(SCAN_DURATION);
     const backgroundColor = !props.disabled
         ? !isScanInProgress
             ? Colors.blue
-            : Colors.pink
+            : Colors.lightBlue
         : Colors.gray;
 
     React.useEffect(() => {
         let timerid = setInterval(() => {
-            console.log('useScanning');
+            // console.log('useScanning');
             setCountValue(countValue > 0 ? countValue - 1 : 0);
         }, 1000);
         return () => {
@@ -72,11 +72,11 @@ export const ScanButton = (props: ScanButtonProperties): JSX.Element => {
                 setIsScanTransitioning(false);
                 console.error(err);
             });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [peripherals, props, setIsScanInProgress, setList]);
 
     const stopScan = useCallback(() => {
         setCountValue(0);
+        props.onStopppedScannning();
         setIsScanInProgress(false);
         setIsScanTransitioning(true);
         console.log('Stopping Scanning...');
@@ -89,7 +89,7 @@ export const ScanButton = (props: ScanButtonProperties): JSX.Element => {
                 setIsScanTransitioning(false);
                 console.error(err);
             });
-    }, []);
+    }, [props, setIsScanInProgress]);
 
     const handleDiscoverPeripheral = useCallback((peripheral: Peripheral) => {
         if (peripheral.name === PERIPHERAL_NAME_TO_SEARCH) {
@@ -134,7 +134,7 @@ export const ScanButton = (props: ScanButtonProperties): JSX.Element => {
         console.log('Stopped scanning');
         setIsScanInProgress(false);
         setCountValue(0);
-    }, []);
+    }, [setIsScanInProgress]);
 
     useInitBle(
         handleDiscoverPeripheral,
@@ -143,27 +143,24 @@ export const ScanButton = (props: ScanButtonProperties): JSX.Element => {
     );
 
     return (
-        // eslint-disable-next-line react-native/no-inline-styles
-        <View style={{margin: 10}}>
-            <TouchableHighlight
-                onPress={() => (!isScanInProgress ? startScan() : stopScan())}
-                disabled={props.disabled}>
-                <Text
-                    // eslint-disable-next-line react-native/no-inline-styles
-                    style={{
-                        height: 60,
-                        textAlign: 'center',
-                        textAlignVertical: 'center',
-                        padding: 2,
-                        flexGrow: 1,
-                        backgroundColor: `${backgroundColor}`,
-                        color: 'white',
-                    }}>
-                    {title}
-                </Text>
-            </TouchableHighlight>
-            {/* <Progress.Bar progress={(20 - countValue / 20} width={20} style={{width:'100%'}}/> */}
-        </View>
+        <TouchableHighlight
+            onPress={() => (!isScanInProgress ? startScan() : stopScan())}
+            disabled={props.disabled}>
+            <Text
+                // eslint-disable-next-line react-native/no-inline-styles
+                style={{
+                    height: 40,
+                    textAlign: 'center',
+                    textAlignVertical: 'center',
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    flexGrow: 1,
+                    backgroundColor: `${backgroundColor}`,
+                    color: 'white',
+                }}>
+                {title}
+            </Text>
+        </TouchableHighlight>
     );
 };
 

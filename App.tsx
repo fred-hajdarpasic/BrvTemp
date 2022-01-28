@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import {SafeAreaView, View, Text, StatusBar, FlatList} from 'react-native';
+import {
+    SafeAreaView,
+    View,
+    Text,
+    StatusBar,
+    FlatList,
+    ActivityIndicator,
+} from 'react-native';
 
 import useUiState, {toggleConnection} from './useUiState';
 import ConnectionIndicator from './ConnectionIndicator';
@@ -11,11 +18,14 @@ import PeripheralDetails from './PeripheralDetails';
 import AppContext, {Point} from './AppContext';
 import CollectionStartStopController from './CollectionStartStopController';
 import ScanButton from './ScanButton';
-import { Chart } from './Chart';
+import {Chart, ChartData, ChartProps} from './Chart';
 
 const App = () => {
-    const {peripherals, list, setList} = React.useContext(AppContext);
+    const {peripherals, list, setList, isScanInProgress} =
+        React.useContext(AppContext);
     const [isConnected, setIsConnected] = React.useState(false);
+    const [isChangingConnection, setIsChangingConnection] =
+        React.useState(false);
     const [blIsOn, setBlIsOn] = React.useState(false);
 
     const [isCollecting, setIsCollecting] = React.useState(false);
@@ -44,7 +54,9 @@ const App = () => {
             return (
                 <PeripheralDetails
                     onPress={async () => {
+                        setIsChangingConnection(true);
                         await toggleConnection(peripheral);
+                        setIsChangingConnection(false);
                         const id = peripheral.peripheral.id;
                         let p = peripherals.get(id);
                         if (p) {
@@ -71,7 +83,7 @@ const App = () => {
             setIsCollecting(false);
         }
     }, [blIsOn]);
-    const {a, b, c, d} = React.useContext(AppContext);
+    const {chartData} = React.useContext(AppContext);
 
     const onBleStateChanged = React.useCallback((on: boolean) => {
         setBlIsOn(on);
@@ -88,28 +100,21 @@ const App = () => {
                             flexDirection: 'row',
                             justifyContent: 'space-between',
                         }}>
-                        <View style={{flexGrow: 5}}>
-                            <ConnectionIndicator
-                                connected={isConnected}
-                                preipheralId={connectedPeripheralId}
-                                onBleStateChanged={onBleStateChanged}
-                            />
-                        </View>
-                        <Text
-                            style={{
-                                textAlign: 'left',
-                                textAlignVertical: 'center',
-                                padding: 2,
-                                flexGrow: 1,
-                            }}
+                        <ConnectionIndicator
+                            connected={isConnected}
+                            preipheralId={connectedPeripheralId}
+                            onBleStateChanged={onBleStateChanged}
                         />
-                        <View style={{flexGrow: 5}}>
-                            <ScanButton
-                                disabled={!blIsOn}
-                                onStartedScanning={onStartedScanning}
-                                onStopppedScannning={onStoppedScanning}
-                            />
-                        </View>
+                        {(!blIsOn ||
+                            isScanInProgress ||
+                            isChangingConnection) && (
+                            <ActivityIndicator size="small" color="#0000ff" />
+                        )}
+                        <ScanButton
+                            disabled={!blIsOn}
+                            onStartedScanning={onStartedScanning}
+                            onStopppedScannning={onStoppedScanning}
+                        />
                     </View>
                 </View>
                 <View style={styles.deviceList}>
@@ -122,10 +127,7 @@ const App = () => {
                 </View>
                 <View style={{flexGrow: 1}}>
                     <View style={{margin: 10}}>
-                        <Chart a={a} b={b} />
-                    </View>
-                    <View style={{margin: 10}}>
-                        <Chart a={c} b={d} />
+                        <Chart chartData={chartData} />
                     </View>
                 </View>
                 <View style={styles.body}>
@@ -148,62 +150,30 @@ const shift = <T extends unknown>(a: T[], p: T) => {
 };
 
 const AppCtx = () => {
-    const [a, setA] = React.useState<Point[]>([]);
-    const [b, setB] = React.useState<Point[]>([]);
-    const [c, setC] = React.useState<Point[]>([]);
-    const [d, setD] = React.useState<Point[]>([]);
+    const [chartData, setChartData] = React.useState<ChartData>({
+        a: [],
+        b: [],
+        c: [],
+        d: [],
+    });
+
     const [isCollecting, setIsCollecting] = React.useState(false);
+    const [isScanInProgress, setIsScanInProgress] = React.useState(false);
     const [list, setList] = React.useState([] as any[]);
     const peripherals = React.useMemo(
         () => new Map<string, BrvPeripheral>(),
         [],
     );
 
-    const addA = React.useCallback(
-        (p: Point) => {
-            setA(shift(a, p));
-        },
-        [a],
-    );
-
-    const addB = React.useCallback(
-        (p: Point) => {
-            setB(shift(b, p));
-        },
-        [b],
-    );
-
-    const addC = React.useCallback(
-        (p: Point) => {
-            setC(shift(c, p));
-        },
-        [c],
-    );
-
-    const addD = React.useCallback(
-        (p: Point) => {
-            setD(shift(d, p));
-        },
-        [d],
-    );
-
     return (
         <AppContext.Provider
             value={{
-                a,
-                b,
-                c,
-                d,
-                setA,
-                setB,
-                setC,
-                setD,
-                addA,
-                addB,
-                addC,
-                addD,
+                chartData,
+                setChartData,
                 isCollecting,
                 setIsCollecting,
+                isScanInProgress,
+                setIsScanInProgress,
                 list,
                 setList,
                 peripherals,

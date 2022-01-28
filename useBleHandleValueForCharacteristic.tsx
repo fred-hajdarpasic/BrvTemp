@@ -11,7 +11,6 @@ const B: Point[] = [];
 const C: Point[] = [];
 const D: Point[] = [];
 
-let countA = 0;
 let countC = 0;
 
 const SLIDING_WINDOW = 16;
@@ -24,7 +23,7 @@ const shift = <T extends unknown>(target: T[], p: T) => {
 };
 
 const useBleHandleValueForCharacteristic = () => {
-    const {setA, setB, setC, setD, isCollecting} = React.useContext(AppContext);
+    const {setChartData, isCollecting} = React.useContext(AppContext);
     const handleUpdateValueForCharacteristic = React.useCallback(
         (data: any) => {
             if (!isCollecting) {
@@ -40,11 +39,8 @@ const useBleHandleValueForCharacteristic = () => {
                 console.log('a', a);
                 const b = Number(Number(second.replace('B', '')).toFixed(2));
                 console.log('b', b);
-                shift(A, {x: `${countA}`, y: a});
-                shift(B, {x: `${countA}`, y: b});
-                countA++;
-                setA([...A]);
-                setB([...B]);
+                shift(A, {x: `${countC}`, y: a});
+                shift(B, {x: `${countC}`, y: b});
             }
             if (first.startsWith('C')) {
                 const c = Number(Number(first.replace('C', '')).toFixed(2));
@@ -54,11 +50,10 @@ const useBleHandleValueForCharacteristic = () => {
                 shift(C, {x: `${countC}`, y: c});
                 shift(D, {x: `${countC}`, y: d});
                 countC++;
-                setC([...C]);
-                setD([...D]);
+                setChartData({a: [...A], b: [...B], c: [...C], d: [...D]});
             }
         },
-        [setA, setB, setC, setD, isCollecting],
+        [setChartData, isCollecting],
     );
 
     useEffect(() => {

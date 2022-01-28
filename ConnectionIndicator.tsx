@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import {View, Text, NativeModules, NativeEventEmitter} from 'react-native';
+import {Text, NativeModules, NativeEventEmitter} from 'react-native';
 
 import Colors from './Colors';
 import useRefreshTimer from './useRefreshTimer';
@@ -87,9 +87,7 @@ export const ConnectionIndicator = (props: ConnectionIndicatorProps) => {
 
     const getTitle = React.useCallback((): string => {
         if (props.connected) {
-            return rssi > LOW_RSSI_THRESHOLD
-                ? 'SE connected'
-                : `RSSI LOW ${rssi}`;
+            return rssi > LOW_RSSI_THRESHOLD ? 'Connected' : `RSSI LOW ${rssi}`;
         } else {
             return blIsOn ? 'NOT CONNECTED' : 'BL IS OFF';
         }
@@ -97,20 +95,18 @@ export const ConnectionIndicator = (props: ConnectionIndicatorProps) => {
 
     console.log('Rendering ConnectionIndicator ...');
     return (
-        <View>
-            <Text
-                style={{
-                    height: 40,
-                    textAlign: 'center',
-                    textAlignVertical: 'center',
-                    padding: 2,
-                    flexGrow: 1,
-                    backgroundColor: getColor(),
-                    color: 'white',
-                }}>
-                {getTitle()}
-            </Text>
-        </View>
+        <Text
+            style={{
+                height: 40,
+                textAlign: 'center',
+                textAlignVertical: 'center',
+                padding: 2,
+                flexGrow: 1,
+                // backgroundColor: getColor(),
+                color: getColor(),
+            }}>
+            {getTitle()}
+        </Text>
     );
 };
 
